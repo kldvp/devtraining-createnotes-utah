@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
+    <sp_widget action="INSERT_OR_UPDATE">
+        <category>custom</category>
+        <client_script><![CDATA[api.controller=function($rootScope, $scope, spUtil) {
+	/* widget controller */
+	var c = this;
+	// handle when notes selected in notes list widget
+	function selectNoteHandler(event, data) {
+		console.log('received event with noteId: ', data);
+		// c.data.details = data;
+		// c.data.event = event;
+		var payload = {
+			action: 'getNote',
+			note: { noteId: data }
+		};
+		c.server.get(payload).then(function(sr) {
+			c.data.selectedNotes = {
+				noteId: sr.data.noteDetails.sys_id,
+				title: sr.data.noteDetails.title,
+				note: sr.data.noteDetails.note,
+			};
+		}).catch(function(fetchNotesErr){
+			console.log('Error while fetching note details :', fetchNoteErr);
+			c.data.fetchErr = fetchNotesErr;
+		});
+	}
+	$rootScope.$on('selectNote', selectNoteHandler);
+
+	// handle updates to selected notes
+	function updateNote(updateType) {
+		var payload = {
+			action: 'updateNote',
+			note: c.data.selectedNotes,
+		};
+		console.log('updating notes with payload :', c.data.selectedNotes);
+		c.server.get(payload).then(function(sr) {
+			spUtil.addTrivialMessage('Notes updated successfully.');
+		}).catch(function(updateErr){
+			// console.error(updateErr);
+			// spUtil.addErrorMessage('Error while updating notes, check console');
+		});
+	}
+	c.updateNote = updateNote;
+
+};]]></client_script>
+        <controller_as>c</controller_as>
+        <css/>
+        <data_table>sp_instance</data_table>
+        <demo_data/>
+        <description/>
+        <docs/>
+        <field_list/>
+        <has_preview>true</has_preview>
+        <id>notes_body</id>
+        <internal>false</internal>
+        <link><![CDATA[function link(scope, element, attrs, controller) {  }]]></link>
+        <name>Notes body</name>
+        <option_schema/>
+        <public>false</public>
+        <roles/>
+        <script><![CDATA[(function() {
+	/* populate the 'data' object */
+	/* e.g., data.table = $sp.getValue('table'); */
+	if (input && input.action === 'getNote') {
+		if (!input.note.noteId) return; 
+		return getNote(input.note.noteId);
+	}
+
+	if (input && input.action === 'updateNote') {
+		if (!input.note.noteId) return;
+		return updateNote(input.note);
+	}
+
+	function getNotesGlideRecord() {
+		return new GlideRecord('x_snc_createnotes_note');
+	}
+
+	// update notes by noteId and given payload
+	function updateNote(note) {
+		var noteGr = getNotesGlideRecord();
+		if (noteGr.get(note.noteId)) {
+			noteGr.setValue('title', note.title);
+			noteGr.setValue('note', note.note);
+			noteGr.update();
+		}
+	}
+
+	// fetch note details based on noteId
+	function getNote(noteId) {
+		var noteGr = getNotesGlideRecord();
+		if (noteGr.get(noteId)) {
+			data.noteDetails = {};
+			$sp.getRecordValues(data.noteDetails, noteGr, "title,note,sys_id");
+		}
+	}
+})();]]></script>
+        <servicenow>false</servicenow>
+        <sys_class_name>sp_widget</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2024-10-29 13:14:22</sys_created_on>
+        <sys_id>2d82a92dc3e9121065a51933e40131ea</sys_id>
+        <sys_mod_count>49</sys_mod_count>
+        <sys_name>Notes body</sys_name>
+        <sys_package display_value="CreateNotes" source="x_snc_createnotes">df5fd9a5090232007f44e1046c8ff69f</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="CreateNotes">df5fd9a5090232007f44e1046c8ff69f</sys_scope>
+        <sys_update_name>sp_widget_2d82a92dc3e9121065a51933e40131ea</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2024-10-30 05:37:23</sys_updated_on>
+        <template><![CDATA[<div class="panel panel-default" ng-show="c.data.selectedNotes.noteId">
+  <div class="panel-heading clearfix">
+    <h3 class="panel-title pull-left">
+      ${Notes Details}
+    </h3>
+  </div>
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-md-12">
+        <input class="form-control" id="note-title" ng-model="c.data.selectedNotes.title" ng-change="c.updateNote('title')" ng-model-options="{debounce: 1000}"/>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <textarea class="form-control" id="note-body" ng-model="c.data.selectedNotes.note" ng-change="c.updateNote('note')" ng-model-options="{debounce: 1000}"></textarea>
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3>Debug details</h3>
+    <pre class="pre-scrollable">{{data|json}}</pre>
+  </div>
+</div>]]></template>
+    </sp_widget>
+</record_update>
